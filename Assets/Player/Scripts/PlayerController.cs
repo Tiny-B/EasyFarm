@@ -17,7 +17,9 @@ namespace Player
     #region PlayerMovement
     [Header("PlayerMovement")]
     public float speed = 5f;
-    public float rotationSpeed = 180f;  // degrees per second
+    public float normalSpeed = 5f;
+    public float tiredSpeed = 2f;
+    public float rotationSpeed = 180f;  
     public float turnSmoothTime = 0.1f;
     #endregion
 
@@ -55,10 +57,18 @@ namespace Player
         Attack();
         Interact();
 
+        #region Debug
+        // Tests and cheats ------------
         if (Input.GetKeyDown(KeyCode.T)) // test damage
         {
-          TakeDamage(-5f);
+          TakeDamage(-15f);
         }
+        if (Input.GetKeyDown(KeyCode.Y)) // give stam test
+        {
+          stats.UpdateCurrentStamValue(5f);
+        }
+        //-------------------------------
+        #endregion
       }
 
       if (Input.GetKeyDown(KeyCode.Escape))
@@ -67,7 +77,21 @@ namespace Player
       }
     }
 
-    void TakeDamage(float amount)
+    public void ChangeSpeed(bool isTired)
+    {
+      if (isTired)
+      {
+        animator.SetBool("isTired", true);
+        speed = tiredSpeed;
+      }
+      else
+      {
+        animator.SetBool("isTired", false);
+        speed = normalSpeed;
+      }
+    }
+
+    public void TakeDamage(float amount)
     {
       if (canTakeDamage)
       {
@@ -78,6 +102,8 @@ namespace Player
         if (stats.health <= 0)
         {
           isAlive = false;
+          animator.SetTrigger("die");
+          animator.SetBool("isAlive", false);
         }
       }
     }
@@ -123,15 +149,12 @@ namespace Player
     void PlayerMovement()
     {
       Vector3 moveDir = new Vector3(Input.GetAxis("Horizontal"), 0f, Input.GetAxis("Vertical")).normalized;
-
       transform.position += moveDir * speed * Time.deltaTime;
 
       if (moveDir.sqrMagnitude > 0.001f)
       {
         Quaternion targetRot = Quaternion.LookRotation(moveDir, Vector3.up);
-
         transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
-
         animator.SetBool("isMoving", true);
       }
       else
